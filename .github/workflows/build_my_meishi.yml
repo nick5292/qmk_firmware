@@ -4,6 +4,9 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    
     container: qmkfm/qmk_cli
     steps:
       - name: Checkout
@@ -13,10 +16,18 @@ jobs:
 
       - name: Build Firmware
         run: |
+          # ビルド実行
           qmk compile -kb aki27/trackball_module -km default
+          # 生成されたファイルをカレントディレクトリに強制コピー（念のため）
+          cp /github/home/qmk_firmware/*.hex ./ 2>/dev/null || :
+          cp /github/home/qmk_firmware/*.bin ./ 2>/dev/null || :
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: meishi_firmware
-          path: ./*.hex
+          # ルートディレクトリ以下のすべての .hex と .bin を対象にする
+          path: |
+            **/*.hex
+            **/*.bin
+          if-no-files-found: error
