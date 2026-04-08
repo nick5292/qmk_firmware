@@ -4,6 +4,7 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Node.js 24への対応を強制して警告を黙らせる
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     
@@ -18,16 +19,21 @@ jobs:
         run: |
           # ビルド実行
           qmk compile -kb aki27/trackball_module -km default
-          # 生成されたファイルをカレントディレクトリに強制コピー（念のため）
-          cp /github/home/qmk_firmware/*.hex ./ 2>/dev/null || :
-          cp /github/home/qmk_firmware/*.bin ./ 2>/dev/null || :
+          
+          # 【重要】ファイルがどこにあるかログに出力して確認
+          echo "--- Searching for compiled files ---"
+          find . -name "*.hex" -o -name "*.bin"
+          
+          # 安全のため、見つかったファイルをカレントディレクトリに集める
+          find . -name "*.hex" -exec cp {} . \;
+          find . -name "*.bin" -exec cp {} . \;
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: meishi_firmware
-          # ルートディレクトリ以下のすべての .hex と .bin を対象にする
+          # カレントディレクトリにあるファイルをすべてアップロード
           path: |
-            **/*.hex
-            **/*.bin
+            *.hex
+            *.bin
           if-no-files-found: error
